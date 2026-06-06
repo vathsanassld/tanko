@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JFT Basic Words Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;600;700&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --indigo: #3730a3; --indigo-light: #6366f1; --indigo-pale: #e0e7ff;
+  --rose: #e11d48; --rose-light: #fb7185;
+  --amber: #d97706; --amber-light: #fcd34d;
+  --emerald: #059669; --emerald-light: #34d399;
+  --sky: #0284c7; --sky-light: #38bdf8;
+  --slate-dark: #1e293b; --slate: #334155; --slate-mid: #64748b; --slate-light: #cbd5e1;
+  --bg: #f1f5f9; --card: #ffffff;
+  --shadow: 0 4px 24px rgba(55,48,163,0.10); --shadow-lg: 0 8px 40px rgba(55,48,163,0.16);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; height: 100dvh; overflow: hidden; }
+body {
+  font-family: 'Sarabun', 'Noto Sans Lao', sans-serif;
+  background: var(--bg); color: var(--slate-dark);
+}
+
+/* ── PAGE SYSTEM: full-screen slide transitions ── */
+.page {
+  position: fixed; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  transition: transform .38s cubic-bezier(.4,0,.2,1), opacity .38s;
+  will-change: transform, opacity;
+}
+.page.page-hidden-right  { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.page.page-hidden-left   { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+.page.page-active        { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+/* ── LOGIN ── */
+#p-login {
+  background: linear-gradient(135deg, #3730a3 0%, #6366f1 50%, #a5b4fc 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: white; border-radius: 28px; padding: 48px 44px 40px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 24px 80px rgba(55,48,163,0.25); text-align: center;
+}
+.login-logo { font-size: 52px; margin-bottom: 8px; }
+.login-title { font-family: 'M PLUS Rounded 1c',sans-serif; font-size: 28px; font-weight: 800; color: var(--indigo); }
+.login-sub { color: var(--slate-mid); margin: 6px 0 32px; font-size: 15px; }
+.login-card label { display: block; text-align: left; font-weight: 600; font-size: 13px; color: var(--slate); margin-bottom: 6px; }
+.login-card input {
+  width: 100%; padding: 12px 16px; border: 2px solid var(--indigo-pale);
+  border-radius: 12px; font-size: 16px; font-family: inherit;
+  transition: border-color .2s; margin-bottom: 20px; outline: none; background: #fafbff;
+}
+.login-card input:focus { border-color: var(--indigo-light); }
+.btn-primary {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
+  color: white; border: none; border-radius: 14px;
+  font-size: 17px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.45); }
+
+/* ── WORDLIST PAGE ── */
+#p-wordlist { background: var(--bg); display: flex; flex-direction: column; }
+/* ── QUIZ-SETUP PAGE ── */
+#p-quiz-setup { background: var(--bg); display: flex; flex-direction: column; }
+/* ── QUIZ-PLAY PAGE ── */
+#p-quiz-play { background: var(--bg); display: flex; flex-direction: column; }
+/* ── FINAL PAGE ── */
+#p-final {
+  background: linear-gradient(135deg, #1e293b 0%, #3730a3 60%, #6366f1 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding: 24px;
+}
+
+/* ── SHARED HEADER ── */
+.app-header {
+  background: white; border-bottom: 2px solid var(--indigo-pale);
+  padding: 0 20px; display: flex; align-items: center; gap: 14px;
+  height: 60px; flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(55,48,163,0.07);
+}
+.app-logo { font-size: 26px; }
+.app-title { font-family: 'M PLUS Rounded 1c',sans-serif; font-weight: 800; color: var(--indigo); font-size: 18px; }
+.player-badge { margin-left: auto; background: var(--indigo-pale); color: var(--indigo); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.tab-bar { display: flex; background: white; border-bottom: 2px solid var(--indigo-pale); padding: 0 20px; flex-shrink: 0; }
+.tab-btn {
+  padding: 14px 24px; border: none; background: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; font-family: inherit; color: var(--slate-mid);
+  border-bottom: 3px solid transparent; transition: color .2s, border-color .2s; margin-bottom: -2px;
+}
+.tab-btn.active { color: var(--indigo); border-bottom-color: var(--indigo); }
+.back-btn {
+  background: none; border: none; cursor: pointer; font-size: 22px; padding: 4px 8px;
+  color: var(--indigo); font-family: inherit;
+}
+
+/* ── SCROLL CONTENT AREA ── */
+.page-body { flex: 1; overflow-y: auto; padding: 24px 20px; }
+
+/* ── WORD LIST ── */
+.category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 14px; margin-bottom: 24px; }
+.cat-card {
+  background: white; border-radius: 16px; padding: 18px 20px;
+  border: 2px solid transparent; cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+  display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow);
+}
+.cat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.cat-card.selected { border-color: var(--indigo-light); background: var(--indigo-pale); }
+.cat-icon { font-size: 26px; width: 44px; height: 44px; border-radius: 11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.cat-name { font-weight: 700; font-size: 14px; color: var(--slate-dark); }
+.cat-count { font-size: 12px; color: var(--slate-mid); margin-top: 2px; }
+.words-panel { background: white; border-radius: 18px; padding: 22px; box-shadow: var(--shadow); }
+.words-panel h3 { font-family: 'M PLUS Rounded 1c',sans-serif; color: var(--indigo); margin-bottom: 16px; font-size: 17px; }
+.word-row { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 10px 14px; border-radius: 9px; margin-bottom: 4px; font-size: 13px; transition: background .15s; border-bottom: 1px solid #f1f5f9; }
+.word-row:hover { background: var(--indigo-pale); }
+.word-row .jp { font-weight: 700; color: var(--indigo); font-size: 15px; }
+.word-row .reading { color: var(--slate-mid); font-size: 12px; }
+.word-header { font-weight: 700; color: var(--slate-mid); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 14px; }
+
+/* ── QUIZ SETUP ── */
+.quiz-setup-card { background: white; border-radius: 22px; padding: 28px; box-shadow: var(--shadow-lg); }
+.quiz-setup-card h2 { font-family: 'M PLUS Rounded 1c',sans-serif; font-size: 22px; color: var(--indigo); margin-bottom: 8px; }
+.quiz-setup-card p { color: var(--slate-mid); margin-bottom: 20px; line-height: 1.6; font-size: 14px; }
+.step-badges { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.step-badge { background: var(--indigo-pale); color: var(--indigo); padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+.section-label { font-weight: 700; color: var(--slate); margin-bottom: 10px; font-size: 14px; }
+
+/* Category rows with range */
+.cat-row {
+  background: var(--bg); border: 2px solid var(--indigo-pale); border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 10px; transition: border-color .2s;
+}
+.cat-row.active-cat { border-color: var(--indigo-light); background: #f0f1ff; }
+.cat-row-top { display: flex; align-items: center; gap: 10px; }
+.cat-row-top input[type=checkbox] { accent-color: var(--indigo); width: 18px; height: 18px; flex-shrink:0; }
+.cat-row-name { font-weight: 700; font-size: 14px; flex: 1; }
+.cat-total-badge { background: var(--indigo); color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; font-weight: 800; }
+.range-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.range-row label { font-size: 12px; color: var(--slate-mid); font-weight: 600; white-space: nowrap; }
+.range-input {
+  width: 64px; padding: 6px 10px; border: 2px solid var(--indigo-pale); border-radius: 8px;
+  font-size: 14px; font-family: inherit; font-weight: 700; color: var(--indigo); text-align: center; outline: none;
+}
+.range-input:focus { border-color: var(--indigo-light); }
+.range-max-note { font-size: 11px; color: var(--slate-mid); }
+.range-preview { font-size: 12px; color: var(--indigo); font-weight: 700; background: var(--indigo-pale); padding: 3px 10px; border-radius: 8px; }
+
+/* ── QUIZ PLAY ── */
+.quiz-play-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+.quiz-card {
+  background: white; border-radius: 22px; padding: 28px;
+  box-shadow: var(--shadow-lg); flex: 1; display: flex; flex-direction: column;
+  min-height: 420px;
+}
+.progress-bar-wrap { background: var(--indigo-pale); border-radius: 10px; height: 7px; margin-bottom: 20px; overflow: hidden; }
+.progress-bar-fill { background: linear-gradient(90deg, var(--indigo), var(--indigo-light)); height: 100%; border-radius: 10px; transition: width .4s; }
+.quiz-step-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--slate-mid); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.quiz-step-pip { width: 22px; height: 22px; border-radius: 50%; background: var(--indigo); color: white; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+/* Step 1 */
+.word-display { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
+.word-jp { font-size: 48px; font-weight: 900; color: var(--indigo); line-height: 1.1; }
+.word-reading { font-size: 18px; color: var(--slate-mid); }
+.word-meanings { display: flex; gap: 14px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+.meaning-tag { padding: 7px 18px; border-radius: 20px; font-size: 15px; font-weight: 600; }
+.meaning-lao { background: #fef3c7; color: #92400e; }
+.meaning-thai { background: #dcfce7; color: #166534; }
+.remember-btns { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+.btn-remember { padding: 11px 28px; border-radius: 13px; border: none; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.btn-yes { background: var(--emerald); color: white; box-shadow: 0 4px 14px rgba(5,150,105,.3); }
+.btn-yes:hover { transform: translateY(-2px); }
+.btn-no { background: var(--rose); color: white; box-shadow: 0 4px 14px rgba(225,29,72,.3); }
+.btn-no:hover { transform: translateY(-2px); }
+
+/* Step 2 */
+.arrange-meaning { font-size: 20px; font-weight: 700; color: var(--slate-dark); text-align: center; margin-bottom: 20px; }
+.letter-answer { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; min-height: 52px; margin-bottom: 20px; }
+.letter-slot { width: 42px; height: 50px; border-radius: 9px; border: 2px dashed var(--indigo-pale); background: #fafbff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--indigo); cursor: pointer; transition: background .2s, border-color .2s; }
+.letter-slot:hover { background: var(--indigo-pale); border-color: var(--indigo-light); }
+.letter-pool { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.letter-tile { width: 42px; height: 50px; border-radius: 9px; background: var(--indigo-pale); color: var(--indigo); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; cursor: pointer; transition: background .2s, transform .15s; border: 2px solid transparent; }
+.letter-tile:hover { background: var(--indigo-light); color: white; transform: translateY(-2px); }
+.letter-tile.used { background: var(--slate-light); color: var(--bg); cursor: default; }
+.feedback-msg { text-align: center; font-size: 15px; font-weight: 700; min-height: 26px; }
+.feedback-ok { color: var(--emerald); }
+.feedback-err { color: var(--rose); }
+
+/* Step 3 */
+.type-input-wrap { display: flex; gap: 10px; justify-content: center; margin: 18px 0; width: 100%; }
+.type-input { padding: 11px 18px; font-size: 20px; font-weight: 800; border: 2px solid var(--indigo-pale); border-radius: 13px; text-align: center; width: 100%; max-width: 240px; font-family: inherit; outline: none; color: var(--indigo); transition: border-color .2s; }
+.type-input:focus { border-color: var(--indigo-light); }
+.hint-display { text-align: center; font-size: 17px; color: var(--amber); font-weight: 700; min-height: 26px; }
+.btn-check { padding: 11px 28px; border-radius: 13px; background: var(--indigo); color: white; border: none; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 4px 14px rgba(55,48,163,.3); }
+.btn-check:hover { transform: translateY(-2px); }
+.btn-next { align-self: flex-end; margin-top: auto; padding: 11px 24px; border-radius: 13px; background: var(--sky); color: white; border: none; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s; box-shadow: 0 4px 14px rgba(2,132,199,.3); }
+.btn-next:hover { transform: translateY(-2px); }
+
+/* ── FINAL ── */
+.result-card { background: white; border-radius: 26px; padding: 32px 36px; max-width: 520px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.4); margin: 0 auto; }
+.result-header { text-align: center; margin-bottom: 24px; }
+.result-logo { font-size: 36px; }
+.result-title { font-family: 'M PLUS Rounded 1c',sans-serif; font-size: 22px; color: var(--indigo); font-weight: 800; margin-top: 6px; }
+.result-player { font-size: 18px; font-weight: 700; color: var(--slate-dark); margin-top: 4px; }
+.result-meta { display: flex; gap: 10px; justify-content: center; margin: 10px 0 20px; flex-wrap: wrap; }
+.meta-tag { background: var(--indigo-pale); color: var(--indigo); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.score-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.score-box { background: var(--bg); border-radius: 14px; padding: 14px 10px; text-align: center; border: 2px solid var(--indigo-pale); }
+.score-box-title { font-size: 10px; font-weight: 700; color: var(--slate-mid); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+.score-box-num { font-size: 30px; font-weight: 900; color: var(--indigo); line-height: 1; }
+.score-box-denom { font-size: 12px; color: var(--slate-mid); }
+.score-total { background: linear-gradient(135deg, var(--indigo), var(--indigo-light)); border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 20px; color: white; }
+.score-total-label { font-size: 12px; font-weight: 700; opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+.score-total-num { font-size: 36px; font-weight: 900; line-height: 1.1; }
+.result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-action { padding: 11px 20px; border-radius: 13px; border: none; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.btn-capture { background: var(--amber); color: white; }
+.btn-review  { background: var(--indigo); color: white; }
+.btn-playagain { background: var(--emerald); color: white; }
+.btn-action:hover { transform: translateY(-2px); }
+.review-section { margin-top: 18px; max-height: 260px; overflow-y: auto; }
+.review-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 9px; margin-bottom: 5px; background: var(--bg); }
+.review-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.dot-ok { background: var(--emerald); } .dot-err { background: var(--rose); }
+.review-jp { font-weight: 800; color: var(--indigo); font-size: 15px; min-width: 72px; }
+.review-lao { color: var(--slate-dark); font-size: 13px; }
+
+/* ── CUSTOM MODAL (Replaces Alerts) ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-card {
+  background: white; border-radius: 20px; padding: 28px 24px 24px;
+  width: 90%; max-width: 320px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-overlay.show .modal-card { transform: translateY(0) scale(1); }
+.modal-icon { font-size: 36px; margin-bottom: 12px; }
+.modal-msg { font-size: 15px; color: var(--slate-dark); margin-bottom: 24px; font-weight: 600; white-space: pre-line; line-height: 1.5; }
+.btn-modal {
+  background: var(--indigo); color: white; border: none; padding: 12px 28px;
+  border-radius: 12px; font-weight: 700; font-family: inherit; font-size: 15px;
+  cursor: pointer; transition: background 0.2s, transform 0.15s; width: 100%;
+}
+.btn-modal:hover { background: var(--indigo-light); transform: translateY(-2px); }
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 480px) {
+  .page-body { padding: 16px 12px; }
+  .login-card { padding: 32px 24px 28px; border-radius: 20px; }
+  .login-title { font-size: 24px; }
+  .app-header { padding: 0 12px; height: 54px; }
+  .app-title { font-size: 16px; }
+  .tab-bar { padding: 0 12px; }
+  .tab-btn { padding: 12px 16px; font-size: 13px; }
+  .words-panel { padding: 16px; }
+  .word-row { padding: 8px 6px; font-size: 12px; gap: 6px; }
+  .word-row .jp { font-size: 14px; }
+  .word-header { font-size: 10px; padding: 6px; gap: 6px; }
+  .quiz-setup-card { padding: 20px; }
+  .range-row label { font-size: 11px; }
+  .range-input { width: 52px; padding: 4px 6px; font-size: 13px; }
+  .quiz-card { padding: 20px 16px; min-height: 380px; }
+  .word-jp { font-size: 38px; }
+  .meaning-tag { padding: 6px 14px; font-size: 13px; }
+  .btn-remember { padding: 10px 14px; font-size: 14px; }
+  .letter-slot, .letter-tile { width: 34px; height: 42px; font-size: 18px; }
+  .result-card { padding: 24px 16px; }
+  .result-title { font-size: 20px; }
+  .score-box { padding: 10px 6px; }
+  .score-box-num { font-size: 24px; }
+  .score-total-num { font-size: 30px; }
+  .btn-action { padding: 10px 12px; font-size: 12px; }
+  .review-jp { min-width: 60px; font-size: 14px; }
+  .review-lao { font-size: 12px; }
+  .review-item { padding: 8px; gap: 8px; }
+}
+
+/* ── UTIL ── */
+.hidden { display: none !important; }
+.fade-in { animation: fadeIn .35s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- CUSTOM MODAL -->
+<div id="custom-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-msg" id="modal-msg-text">Message goes here</div>
+    <button class="btn-modal" onclick="closeModal()">ตกลง / ຕົກລົງ</button>
+  </div>
+</div>
+
+<!-- ══ PAGE: LOGIN ══ -->
+<div id="p-login" class="page page-active">
+  <div class="login-card">
+    <div class="login-logo">🎌</div>
+    <div class="login-title">JFT Basic Words</div>
+    <div class="login-sub">เรียนภาษาญี่ปุ่น · ຮຽນພາສາຍີ່ປຸ່ນ</div>
+    <label>Player ID (ໄອດີ)</label>
+    <input type="text" id="player-id" placeholder="">
+    <label>Player Name (ຊື່ຕາມລະບົບ)</label>
+    <input type="text" id="player-name" placeholder="">
+    <button class="btn-primary" onclick="doLogin()">▶ เข้าเล่น / ເຂົ້າຫຼິ້ນ</button>
+  </div>
+</div>
+
+<!-- ══ PAGE: WORDLIST ══ -->
+<div id="p-wordlist" class="page page-hidden-right">
+  <div class="app-header">
+    <div class="app-logo">🎌</div>
+    <div class="app-title">JFT Basic Words</div>
+    <div class="player-badge" id="wl-player-badge"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-wl" onclick="switchMainTab('wordlist')">📖 คำศัพท์</button>
+    <button class="tab-btn" id="tab-qz" onclick="switchMainTab('quiz')">🎯 แบบทดสอบ</button>
+    <button class="tab-btn" id="tab-st" onclick="switchMainTab('stats')">📊 ສະຖິຕິລວມ</button>
+  </div>
+  <!-- word list content (shown when tab=wordlist) -->
+  <div id="wl-content" class="page-body">
+    <div class="category-grid" id="cat-grid"></div>
+    <div class="words-panel">
+      <h3 id="wl-panel-title">📌 เลือกหมวดหมู่เพื่อดูคำศัพท์</h3>
+      <div id="word-list-content"></div>
+    </div>
+  </div>
+  <!-- quiz setup content (shown when tab=quiz) -->
+  <div id="qz-content" class="page-body hidden">
+    <div class="quiz-setup-card">
+      <h2>🎯 ตั้งค่าแบบทดสอบ</h2>
+      <p>เลือกหมวดหมู่และจำนวนคำ<br>ຕັ້ງຄ່າ ແລ້ວກົດ "ເລີ່ມ"</p>
+      <div class="step-badges">
+        <div class="step-badge">1: จำคำ</div>
+        <div class="step-badge">2: เรียงตัวอักษร</div>
+        <div class="step-badge">3: พิมพ์คำ</div>
+      </div>
+      <div class="section-label">📦 ເລືອກໝວດ + ປ້ອນຈຳນວນ:</div>
+      <select id="quiz-cat-select" class="type-input" style="width:100%; max-width:100%; margin-bottom:14px; font-size:15px; text-align:left; padding: 12px;" onchange="updateTotalPreview()">
+        <option value="" disabled selected>-- ກະລຸນາເລືອກໝວດ --</option>
+        <option value="all">📚 ທຸກໝວດ (All Categories)</option>
+      </select>
+      <div class="range-row" id="quiz-range-row">
+        <label>ເລີ່ມຄຳທີ:</label>
+        <input type="number" class="range-input" id="quiz-from" placeholder="" onchange="updateTotalPreview()" oninput="updateTotalPreview()">
+        <label>ຮອດຄຳທີ:</label>
+        <input type="number" class="range-input" id="quiz-to" placeholder="" onchange="updateTotalPreview()" oninput="updateTotalPreview()">
+      </div>
+      <div style="margin-top:14px;padding:10px 14px;background:var(--indigo-pale);border-radius:12px;font-size:13px;color:var(--indigo);font-weight:700;" id="quiz-total-preview">
+        ລວມ: 0 ຄຳ
+      </div>
+      <button class="btn-primary" style="margin-top:20px;" onclick="goToQuizPlay()">▶ เริ่มทดสอบ / ເລີ່ມ</button>
+    </div>
+  </div>
+  <!-- stats content (shown when tab=stats) -->
+  <div id="st-content" class="page-body hidden">
+    <div class="quiz-setup-card">
+      <h2>📊 ສະຖິຕິລວມ (Total Session Stats)</h2>
+      <p>ສະຫຼຸບຜົນການຮຽນທັງໝົດຂອງທ່ານໃນຮອບນີ້.</p>
+      <div class="score-grid" style="margin-top: 20px;">
+        <div class="score-box">
+          <div class="score-box-title">⭐ ຂັ້ນ 1</div>
+          <div class="score-box-num" id="stat-s1">0</div>
+          <div class="score-box-denom" id="stat-s1d">/ 0</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-title">🔤 ຂັ້ນ 2</div>
+          <div class="score-box-num" id="stat-s2">0</div>
+          <div class="score-box-denom" id="stat-s2d">/ 0</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-title">⌨️ ຂັ້ນ 3</div>
+          <div class="score-box-num" id="stat-s3">0</div>
+          <div class="score-box-denom" id="stat-s3d">/ 0</div>
+        </div>
+      </div>
+      <div class="score-total" style="margin-top: 16px;">
+        <div class="score-total-label">ຈຳນວນຮອບທີ່ຫຼິ້ນໄປແລ້ວ</div>
+        <div class="score-total-num" id="stat-games">0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: QUIZ PLAY ══ -->
+<div id="p-quiz-play" class="page page-hidden-right">
+  <div class="app-header">
+    <button class="back-btn" onclick="goBack('p-wordlist','p-quiz-play')">←</button>
+    <div class="app-title" style="font-size:16px;">แบบทดสอบ / ແບບທົດສອບ</div>
+    <div class="player-badge" id="qp-player-badge"></div>
+  </div>
+  <div class="quiz-play-body">
+    <div class="quiz-card fade-in" id="quiz-card">
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="quiz-progress"></div></div>
+      <div class="quiz-step-label">
+        <div class="quiz-step-pip" id="step-pip">1</div>
+        <span id="step-label">ขั้น 1: จดจำคำศัพท์</span>
+        <span style="margin-left:auto;color:var(--slate-dark);font-size:13px;" id="word-counter"></span>
+      </div>
+      <div id="step1-content"></div>
+      <div id="step2-content" class="hidden"></div>
+      <div id="step3-content" class="hidden"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:auto;padding-top:18px;">
+        <button class="btn-next hidden" id="btn-next" onclick="nextWord()">ต่อไป ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: FINAL ══ -->
+<div id="p-final" class="page page-hidden-right">
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="result-logo">🎌</div>
+      <div class="result-title">JFT Basic Words – ผลคะแนน</div>
+      <div class="result-player" id="result-player-name"></div>
+      <div class="result-meta">
+        <div class="meta-tag" id="result-date"></div>
+        <div class="meta-tag" id="result-time-spent"></div>
+        <div class="meta-tag" id="result-id-tag"></div>
+      </div>
+    </div>
+    <div class="score-grid">
+      <div class="score-box">
+        <div class="score-box-title">⭐ ขั้น 1<br>จดจำ</div>
+        <div class="score-box-num" id="sc1"></div>
+        <div class="score-box-denom" id="sc1d"></div>
+      </div>
+      <div class="score-box">
+        <div class="score-box-title">🔤 ขั้น 2<br>เรียง</div>
+        <div class="score-box-num" id="sc2"></div>
+        <div class="score-box-denom" id="sc2d"></div>
+      </div>
+      <div class="score-box">
+        <div class="score-box-title">⌨️ ขั้น 3<br>พิมพ์</div>
+        <div class="score-box-num" id="sc3"></div>
+        <div class="score-box-denom" id="sc3d"></div>
+      </div>
+    </div>
+    <div class="score-total">
+      <div class="score-total-label">คะแนนรวม / ຄະແນນລວມ</div>
+      <div class="score-total-num" id="score-total-num"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-action btn-capture" onclick="showCaptureHint()">📸 แคปหน้าจอ</button>
+      <button class="btn-action btn-review" onclick="toggleReview()">📋 รีวิว</button>
+      <button class="btn-action btn-playagain" onclick="playAgain()">🔄 เล่นใหม่</button>
+    </div>
+    <div id="capture-hint" style="text-align:center;margin-top:10px;font-size:12px;color:var(--slate-mid);display:none;">
+      📱 กด <b>PrtSc</b> / <b>Shift+Cmd+4</b> (Mac) / แคปมือถือ แล้วส่งครู!
+    </div>
+    <div id="review-list" class="review-section hidden"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const VALID_IDS = {
+  '1005':'セン','1006':'チョン','1009':'パラーダー','1016':'イェー',
+  '1019':'チューフーロー','1022':'ポーンサイ','1027':'ソムポーン',
+  '1029':'マンコーンカム','1032':'ナパッソーン','10906':'チーダヤーン',
+  '10913':'サイチュア','909':'モンソン','908':'バオイヤ','2715':'ワッサナー',
+};
+
+const CATEGORIES = [
+  { id:'adj',   name:'Adjective',          nameT:'คำคุณศัพท์',   icon:'🌈', color:'#ede9fe' },
+  { id:'v1',    name:'Verb Group 1',         nameT:'กริยากลุ่ม 1', icon:'⚡', color:'#fef3c7' },
+  { id:'v2',    name:'Verb Group 2',         nameT:'กริยากลุ่ม 2', icon:'🔥', color:'#fee2e2' },
+  { id:'v3',    name:'Verb Group 3',         nameT:'กริยากลุ่ม 3', icon:'💫', color:'#dcfce7' },
+  { id:'conv',  name:'Conversational Expr.', nameT:'สำนวนสนทนา',  icon:'💬', color:'#dbeafe' },
+  { id:'noun',  name:'Noun',                 nameT:'คำนาม',        icon:'📦', color:'#fce7f3' },
+  { id:'other', name:'Others',               nameT:'อื่นๆ',        icon:'⭐', color:'#f0fdf4' },
+];
+
+const WORDS = {
+  adj:[
+    {jp:'新しい',r:'あたらしい',lao:'ໃໝ່',thai:'ใหม่'},
+{jp:'良い',r:'いい',lao:'ດີ',thai:'ดี'},
+{jp:'いまいち',r:'いまいち',lao:'ບໍ່ປານໃດ',thai:'ไม่ค่อยดี'},
+{jp:'うるさい',r:'うるさい',lao:'ສຽງດັງ',thai:'เสียงดัง'},
+{jp:'美味しい',r:'おいしい',lao:'ແຊບ',thai:'อร่อย'},
+{jp:'多い',r:'おおい',lao:'ຫຼາຍ',thai:'เยอะ'},
+{jp:'大きい',r:'おおきい',lao:'ໃຫຍ່',thai:'ใหญ่'},
+{jp:'おしゃれ',r:'おしゃれ',lao:'ທັນສະໄໝ',thai:'ทันสมัย'},
+{jp:'遅い',r:'おそい',lao:'ຊ້າ',thai:'ช้า'},
+{jp:'面白い',r:'おもしろい',lao:'ໜ້າສົນໃຈ',thai:'น่าสนใจ'},
+{jp:'格好いい',r:'かっこいい',lao:'ເທ້',thai:'เท่'},
+{jp:'可愛い',r:'かわいい',lao:'ໜ້າຮັກ',thai:'น่ารัก'},
+{jp:'汚い',r:'きたない',lao:'ເປື້ອນ',thai:'สกปรก'},
+{jp:'気持ちいい',r:'きもちいい',lao:'ຮູ້ສຶກດີ',thai:'รู้สึกดี'},
+{jp:'綺麗',r:'きれい',lao:'ງາມ',thai:'สวย'},
+{jp:'元気',r:'げんき',lao:'ແຂງແຮງ',thai:'แข็งแรง'},
+{jp:'静か',r:'しずか',lao:'ງຽບ',thai:'เงียบ'},
+{jp:'すごい',r:'すごい',lao:'ສຸດຍອດ',thai:'สุดยอด'},
+{jp:'素敵',r:'すてき',lao:'ດູດີ',thai:'ดูดี'},
+{jp:'格好いい',r:'かっこいい',lao:'ເທ້',thai:'เท่'},
+{jp:'可愛い',r:'かわいい',lao:'ໜ້າຮັກ',thai:'น่ารัก'},
+{jp:'完全',r:'かんぜん',lao:'ສົມບູນແບບ',thai:'สมบูรณ์แบบ'},
+{jp:'汚い',r:'きたない',lao:'ເປື້ອນ',thai:'สกปรก'},
+{jp:'気持ちいい',r:'きもちいい',lao:'ຮູ້ສຶກດີ',thai:'รู้สึกดี'},
+{jp:'綺麗',r:'きれい',lao:'ງາມ',thai:'สวย'},
+{jp:'元気',r:'げんき',lao:'ແຂງແຮງ',thai:'แข็งแรง'},
+{jp:'静か',r:'しずか',lao:'ງຽບ',thai:'เงียบ'},
+{jp:'すごい',r:'すごい',lao:'ສຸດຍອດ',thai:'สุดยอด'},
+{jp:'素敵',r:'すてき',lao:'ດູດີ',thai:'ดูดี'},
+{jp:'素晴らしい',r:'すばらしい',lao:'ດີເລີດ',thai:'ยอดเยี่ยม'},
+{jp:'狭い',r:'せまい',lao:'ແຄບ',thai:'แคบ'},
+{jp:'大丈夫',r:'だいじょうぶ',lao:'ບໍ່ເປັນຫຍັງ',thai:'ไม่เป็นไร'},
+{jp:'大好き',r:'だいすき',lao:'ມັກຫຼາຍ',thai:'ชอบมาก'},
+{jp:'大変',r:'たいへん',lao:'ລຳບາກ',thai:'ลำบาก'},
+{jp:'高い',r:'たかい',lao:'ແພງ',thai:'แพง'},
+{jp:'楽しい',r:'たのしい',lao:'ມ່ວນ',thai:'สนุก'},
+{jp:'だめ',r:'だめ',lao:'ບໍ່ໄດ້',thai:'ไม่ได้'},
+{jp:'小さい',r:'ちいさい',lao:'ນ້ອຍ',thai:'เล็ก'},
+{jp:'つまらない',r:'つまらない',lao:'ໜ້າເບື່ອ',thai:'น่าเบื่อ'},
+{jp:'ない',r:'ない',lao:'ບໍ່ມີ',thai:'ไม่มี'},
+{jp:'賑やか',r:'にぎやか',lao:'ຄຶກຄື້ນ',thai:'คึกคัก'},
+{jp:'早い',r:'はやい',lao:'ໄວ',thai:'เร็ว'},
+{jp:'低い',r:'ひくい',lao:'ຕ່ຳ',thai:'ต่ำ'},
+{jp:'広い',r:'ひろい',lao:'ກວ້າງ',thai:'กว้าง'},
+{jp:'古い',r:'ふるい',lao:'ເກົ່າ',thai:'เก่า'},
+{jp:'変',r:'へん',lao:'ແປກ',thai:'แปลก'},
+{jp:'ほしい',r:'ほしい',lao:'ຢາກໄດ້',thai:'อยากได้'},
+{jp:'まあまあ',r:'まあまあ',lao:'ທຳມະດາ',thai:'เฉยๆ'},
+{jp:'安い',r:'やすい',lao:'ຖືກ',thai:'ถูก'},
+{jp:'有名',r:'ゆうめい',lao:'ມີຊື່ສຽງ',thai:'มีชื่อเสียง'},
+{jp:'青い',r:'あおい',lao:'ສີຟ້າ',thai:'สีฟ้า'},
+{jp:'暖かい',r:'あたたかい',lao:'ອົບອຸ່ນ',thai:'อบอุ่น'},
+{jp:'温かい',r:'あたたかい',lao:'ອຸ່ນ',thai:'อุ่น'},
+{jp:'あたたかい',r:'あたたかい',lao:'ອຸ່ນ',thai:'อบอุ่น'},
+{jp:'暑い',r:'あつい',lao:'ຮ້ອນ',thai:'ร้อน'},
+{jp:'甘い',r:'あまい',lao:'ຫວານ',thai:'หวาน'},
+{jp:'忙しい',r:'いそがしい',lao:'ຫຍຸ້ງ',thai:'ยุ่ง'},
+{jp:'痛い',r:'いたい',lao:'ເຈັບ',thai:'เจ็บ'},
+{jp:'いろいろ',r:'いろいろ',lao:'ຫຼາຍຢ່າງ',thai:'ต่างๆ'},
+{jp:'動きやすい',r:'うごきやすい',lao:'ເຄື່ອນໄຫວສະດວກ',thai:'เคลื่อนไหวสะดวก'},
+{jp:'うすい （味がうすい）',r:'うすい （あじがうすい）',lao:'ຈາງ',thai:'จืด'},
+{jp:'美しい',r:'うつくしい',lao:'ງົດງາມ',thai:'งดงาม'},
+{jp:'うれしい',r:'うれしい',lao:'ດີໃຈ',thai:'ดีใจ'},
+{jp:'お腹がいっぱい',r:'おなかがいっぱい',lao:'ອີ່ມ',thai:'อิ่ม'},
+{jp:'かゆい',r:'かゆい',lao:'ຄັນ',thai:'คัน'},
+{jp:'辛い',r:'からい',lao:'ເຜັດ',thai:'เผ็ด'},
+{jp:'簡単',r:'かんたん',lao:'ງ່າຍ',thai:'ง่าย'},
+{jp:'厳しい',r:'きびしい',lao:'ເຂັ້ມງວດ',thai:'เข้มงวด'},
+{jp:'具合が悪い',r:'ぐあいがわるい',lao:'ບໍ່ສະບາຍ',thai:'ไม่สบาย'},
+{jp:'調子が悪い',r:'ちょうしがわるい',lao:'ອາການບໍ່ດີ',thai:'อาการไม่ดี'},
+{jp:'都合が悪い',r:'つごうがわるい',lao:'ບໍ່ສະດວກ',thai:'ไม่สะดวก'},
+{jp:'冷たい',r:'つめたい',lao:'ເຢັນ',thai:'เย็น'},
+{jp:'強い',r:'つよい',lao:'ເຂັ້ມແຂງ',thai:'แข็งแรง'},
+{jp:'辛い',r:'つらい',lao:'ທໍລະມານ',thai:'ทรมาน'},
+{jp:'遠い',r:'とおい',lao:'ໄກ',thai:'ไกล'},
+{jp:'得意',r:'とくい',lao:'ຖະໜັດ',thai:'ถนัด'},
+{jp:'長い',r:'ながい',lao:'ຍາວ',thai:'ยาว'},
+{jp:'苦い',r:'にがい',lao:'ຂົມ',thai:'ขม'},
+{jp:'苦手',r:'にがて',lao:'ບໍ່ຖະໜັດ',thai:'ไม่ถนัด'},
+{jp:'ぬるい',r:'ぬるい',lao:'ອຸ່ນໆ',thai:'อุ่นๆ'},
+{jp:'熱が高い',r:'ねつがたかい',lao:'ໄຂ້ສູງ',thai:'ไข้สูง'},
+{jp:'眠い',r:'ねむい',lao:'ງ່ວງນອນ',thai:'ง่วงนอน'},
+{jp:'必要',r:'ひつよう',lao:'ຈຳເປັນ',thai:'จำเป็น'},
+{jp:'ひどい',r:'ひどい',lao:'ຮ້າຍແຮງ',thai:'แย่มาก'},
+{jp:'不便',r:'ふべん',lao:'ບໍ່ສະດວກ',thai:'ไม่สะดวก'},
+{jp:'便利',r:'べんり',lao:'ສະດວກ',thai:'สะดวก'},
+{jp:'まずい',r:'まずい',lao:'ບໍ່ແຊບ',thai:'ไม่อร่อย'},
+{jp:'まっしろ',r:'まっしろ',lao:'ຂາວຈາດ',thai:'ขาวจั๊วะ'},
+{jp:'丸い',r:'まるい',lao:'ມົນ',thai:'กลม'},
+{jp:'短い',r:'みじかい',lao:'ສັ້ນ',thai:'สั้น'},
+{jp:'蒸し暑い',r:'むしあつい',lao:'ອົບເອົ້າ',thai:'ร้อนอบอ้าว'},
+{jp:'難しい',r:'むずかしい',lao:'ຍາກ',thai:'ยาก'},
+{jp:'無理',r:'むり',lao:'ເປັນໄປບໍ່ໄດ້',thai:'เป็นไปไม่ได้'},
+{jp:'優しい',r:'やさしい',lao:'ໃຈດີ',thai:'ใจดี'},
+{jp:'易しい',r:'やさしい',lao:'ງ່າຍ',thai:'ง่าย'},
+{jp:'柔らかい',r:'やわらかい',lao:'ນຸ້ມ',thai:'นุ่ม'},
+{jp:'悪い',r:'わるい',lao:'ບໍ່ດີ',thai:'ไม่ดี'},
+{jp:'赤い',r:'あかい',lao:'ສີແດງ',thai:'สีแดง'},
+{jp:'明るい',r:'あかるい',lao:'ສະຫວ່າງ',thai:'สว่าง'},
+{jp:'厚い',r:'あつい',lao:'ໜາ',thai:'หนา'},
+{jp:'危ない',r:'あぶない',lao:'ອັນຕະລາຍ',thai:'อันตราย'},
+{jp:'甘辛い',r:'あまからい',lao:'ຫວານເຄັມ',thai:'หวานเค็ม'},
+{jp:'安全',r:'あんぜん',lao:'ປອດໄພ',thai:'ปลอดภัย'},
+{jp:'嫌',r:'いや',lao:'ບໍ່ມັກ',thai:'ไม่ชอบ'},
+{jp:'うまい',r:'うまい',lao:'ແຊບ',thai:'อร่อย'},
+{jp:'おめでたい',r:'おめでたい',lao:'ໜ້າຍິນດີ',thai:'น่ายินดี'},
+{jp:'重い',r:'おもい',lao:'ໜັກ',thai:'หนัก'},
+{jp:'カジュアル',r:'カジュアル',lao:'ສະບາຍໆ',thai:'สบายๆ'},
+{jp:'固い',r:'かたい',lao:'ແຂງ',thai:'แข็ง'},
+{jp:'髪が長い',r:'かみがながい',lao:'ຜົມຍາວ',thai:'ผมยาว'},
+{jp:'髪が短い',r:'かみがみじかい',lao:'ຜົມສັ້ນ',thai:'ผมสั้น'},
+{jp:'軽い',r:'かるい',lao:'ເບົາ',thai:'เบา'},
+{jp:'黄色い',r:'きいろい',lao:'ສີເຫຼືອງ',thai:'สีเหลือง'},
+{jp:'気分が悪い',r:'きぶんがわるい',lao:'ຮູ້ສຶກບໍ່ດີ',thai:'รู้สึกไม่ดี'},
+{jp:'臭い',r:'くさい',lao:'ເໝັນ',thai:'เหม็น'},
+{jp:'暗い',r:'くらい',lao:'ມືດ',thai:'มืด'},
+{jp:'詳しい',r:'くわしい',lao:'ລະອຽດ',thai:'ละเอียด'},
+{jp:'怖い',r:'こわい',lao:'ໜ້າຢ້ານ',thai:'น่ากลัว'},
+{jp:'コンパクト',r:'コンパクト',lao:'ກະທັດຮັດ',thai:'กะทัดรัด'},
+{jp:'さまざま',r:'さまざま',lao:'ຫຼາກຫຼາຍ',thai:'หลากหลาย'},
+{jp:'残念',r:'ざんねん',lao:'ເສຍດາຍ',thai:'น่าเสียดาย'},
+{jp:'地味',r:'じみ',lao:'ລຽບງ່າຍ',thai:'เรียบง่าย'},
+{jp:'新鮮',r:'しんせん',lao:'ສົດ',thai:'สด'},
+{jp:'心配',r:'しんぱい',lao:'ເປັນຫ່ວງ',thai:'เป็นห่วง'},
+{jp:'シンプル',r:'シンプル',lao:'ລຽບງ່າຍ',thai:'เรียบง่าย'},
+{jp:'背が高い',r:'せがたかい',lao:'ໂຕສູງ',thai:'ตัวสูง'},
+{jp:'伝統的',r:'でんとうてき',lao:'ດັ້ງເດີມ',thai:'ดั้งเดิม'},
+{jp:'特別',r:'とくべつ',lao:'ພິເສດ',thai:'พิเศษ'},
+{jp:'激しい',r:'はげしい',lao:'ຮຸນແຮງ',thai:'รุนแรง'},
+{jp:'派手',r:'はで',lao:'ສີສັນສົດໃສ',thai:'ฉูดฉาด'},
+{jp:'パワフル',r:'パワフル',lao:'ມີພະລັງ',thai:'ทรงพลัง'},
+{jp:'複雑',r:'ふくざつ',lao:'ຊັບຊ້ອນ',thai:'ซับซ้อน'},
+{jp:'不思議',r:'ふしぎ',lao:'ແປກປະຫຼາດ',thai:'แปลกประหลาด'},
+{jp:'下手',r:'へた',lao:'ບໍ່ເກັ່ງ',thai:'ไม่เก่ง'},
+{jp:'まじめ',r:'まじめ',lao:'ເອົາຈິງເອົາຈັງ',thai:'จริงจัง'},
+{jp:'満足',r:'まんぞく',lao:'ພໍໃຈ',thai:'พอใจ'},
+{jp:'めんどくさい',r:'めんどくさい',lao:'ໜ້າລຳຄານ',thai:'น่ารำคาญ'},
+{jp:'もったいない',r:'もったいない',lao:'ເສຍດາຍ',thai:'เสียดาย'},
+{jp:'有効',r:'ゆうこう',lao:'ມີປະສິດທິຜົນ',thai:'มีประสิทธิภาพ'},
+{jp:'豊か',r:'ゆたか',lao:'ອຸດົມສົມບູນ',thai:'อุดมสมบูรณ์'},
+{jp:'リーズナブル',r:'リーズナブル',lao:'ລາຄາສົມເຫດສົມຜົນ',thai:'ราคาสมเหตุสมผล'},
+{jp:'利用可能',r:'りようかのう',lao:'ສາມາດໃຊ້ໄດ້',thai:'สามารถใช้ได้'},
+{jp:'若い',r:'わかい',lao:'ໜຸ່ມ',thai:'อายุน้อย'},
+
+  ],
+  v1:[
+    {jp:'書く／書きます',r:'かく／かきます',lao:'ຂຽນ',thai:'เขียน'},
+    {jp:'聞く',r:'きく',lao:'ຟັງ/ຖາມ',thai:'ฟัง/ถาม'},
+    {jp:'行く',r:'いく',lao:'ໄປ',thai:'ไป'},
+    {jp:'飲む',r:'のむ',lao:'ດື່ມ',thai:'ดื่ม'},
+    {jp:'話す',r:'はなす',lao:'ເວົ້າ',thai:'พูด'},
+    {jp:'読む',r:'よむ',lao:'ອ່ານ',thai:'อ่าน'},
+    {jp:'買う',r:'かう',lao:'ຊື້',thai:'ซื้อ'},
+    {jp:'待つ',r:'まつ',lao:'ລໍຖ້າ',thai:'รอ'},
+    {jp:'乗る',r:'のる',lao:'ຂຶ້ນ(ຍານ)',thai:'ขึ้น(ยาน)'},
+    {jp:'会う',r:'あう',lao:'ພົບ',thai:'พบ'},
+    {jp:'帰る',r:'かえる',lao:'ກັບ',thai:'กลับ'},
+    {jp:'起きる',r:'おきる',lao:'ຕື່ນ',thai:'ตื่น'},
+  ],
+  v2:[
+    {jp:'食べる',r:'たべる',lao:'ກິນ',thai:'กิน'},
+    {jp:'見る',r:'みる',lao:'ເບິ່ງ',thai:'ดู/มอง'},
+    {jp:'起きる',r:'おきる',lao:'ລຸກ',thai:'ลุก'},
+    {jp:'寝る',r:'ねる',lao:'ນອນ',thai:'นอน'},
+    {jp:'出る',r:'でる',lao:'ອອກ',thai:'ออก'},
+    {jp:'着る',r:'きる',lao:'ໃສ່(ເສື້ອ)',thai:'ใส่(เสื้อ)'},
+    {jp:'教える',r:'おしえる',lao:'ສອນ',thai:'สอน'},
+    {jp:'覚える',r:'おぼえる',lao:'ຈື່',thai:'จำ'},
+    {jp:'忘れる',r:'わすれる',lao:'ລືມ',thai:'ลืม'},
+    {jp:'開ける',r:'あける',lao:'ເປີດ',thai:'เปิด'},
+  ],
+  v3:[
+   {jp:'遊びに来る',r:'あそびにくる',lao:'ມາຫຼິ້ນ',thai:'มาเที่ยว'},
+{jp:'案内する',r:'あんないする',lao:'ນຳທ່ຽວ',thai:'นำทาง'},
+{jp:'行って来る',r:'いってくる',lao:'ໄປແລ້ວກັບມາ',thai:'ไปแล้วกลับมา'},
+{jp:'移動する',r:'いどうする',lao:'ເຄື່ອນຍ້າຍ',thai:'เคลื่อนย้าย'},
+{jp:'引退する',r:'いんたいする',lao:'ອຳລາວົງການ',thai:'เกษียณ'},
+{jp:'ウォーキングする',r:'ウォーキングする',lao:'ຍ່າງອອກກຳລັງກາຍ',thai:'เดินออกกำลังกาย'},
+{jp:'打ち合わせをする／します',r:'うちあわせをする／します',lao:'ປະຊຸມປຶກສາຫາລື',thai:'ประชุมหารือ'},
+{jp:'運転する',r:'うんてんする',lao:'ຂັບລົດ',thai:'ขับรถ'},
+{jp:'運動する／運動します',r:'うんどうする／うんどうします',lao:'ອອກກຳລັງກາຍ',thai:'ออกกำลังกาย'},
+{jp:'営業する',r:'えいぎょうする',lao:'ເປີດບໍລິການ',thai:'เปิดทำการ'},
+{jp:'延期する',r:'えんきする',lao:'ເລື່ອນເວລາ',thai:'เลื่อนเวลา'},
+{jp:'延長する',r:'えんちょうする',lao:'ຕໍ່ເວລາ',thai:'ต่อเวลา'},
+{jp:'遠慮する',r:'えんりょする',lao:'ເກງໃຈ',thai:'เกรงใจ'},
+{jp:'お祝いする',r:'おいわいする',lao:'ສະຫຼອງ',thai:'ฉลอง'},
+{jp:'応募する',r:'おうぼする',lao:'ສະໝັກ',thai:'สมัคร'},
+{jp:'お喋りする',r:'おしゃべりする',lao:'ໂອ້ລົມ',thai:'พูดคุย'},
+{jp:'お邪魔する',r:'おじゃまする',lao:'ລົບກວນ',thai:'รบกวน'},
+{jp:'おしゃれをする',r:'おしゃれをする',lao:'ແຕ່ງໂຕໃຫ້ດູດີ',thai:'แต่งตัวแฟชั่น'},
+{jp:'お勧めする',r:'おすすめする',lao:'ແນະນຳ',thai:'แนะนำ'},
+{jp:'音がする',r:'おとがする',lao:'ມີສຽງ',thai:'มีเสียง'},
+{jp:'開催する',r:'かいさいする',lao:'ຈັດງານ',thai:'จัดงาน'},
+{jp:'開始する',r:'かいしする',lao:'ເລີ່ມຕົ້ນ',thai:'เริ่มต้น'},
+{jp:'買い物する',r:'かいものする',lao:'ຊື້ເຄື່ອງ',thai:'ซื้อของ'},
+{jp:'確認する',r:'かくにんする',lao:'ກວດສອບ',thai:'ตรวจสอบ'},
+{jp:'加熱（する）',r:'かねつ（する）',lao:'ໃຫ້ຄວາມຮ້ອນ',thai:'ให้ความร้อน'},
+{jp:'我慢する',r:'がまんする',lao:'ອົດທົນ',thai:'อดทน'},
+{jp:'感謝する',r:'かんしゃする',lao:'ຮູ້ບຸນຄຸນ',thai:'ขอบคุณ'},
+{jp:'感染する',r:'かんせんする',lao:'ຕິດເຊື້ອ',thai:'ติดเชื้อ'},
+{jp:'感動する',r:'かんどうする',lao:'ປະທັບໃຈ',thai:'ประทับใจ'},
+{jp:'帰国（する）',r:'きこく（する）',lao:'ກັບປະເທດ',thai:'กลับประเทศ'},
+{jp:'期待する',r:'きたいする',lao:'ຄາດຫວັງ',thai:'คาดหวัง'},
+{jp:'帰宅する',r:'きたくする',lao:'ກັບບ້ານ',thai:'กลับบ้าน'},
+{jp:'記入する',r:'きにゅうする',lao:'ຕື່ມຂໍ້ມູນ',thai:'กรอกข้อมูล'},
+{jp:'吸引（する）',r:'きゅういん（する）',lao:'ດູດ',thai:'ดูด'},
+{jp:'休憩（する）',r:'きゅうけい（する）',lao:'ພັກຜ່ອນ',thai:'พักผ่อน'},
+{jp:'協力（する）',r:'きょうりょく（する）',lao:'ຮ່ວມມື',thai:'ร่วมมือ'},
+{jp:'来る／来ます',r:'くる／きます',lao:'ມາ',thai:'มา'},
+{jp:'苦労する',r:'くろうする',lao:'ລຳບາກ',thai:'ลำบาก'},
+{jp:'警戒する',r:'けいかいする',lao:'ເຝົ້າລະວັງ',thai:'เฝ้าระวัง'},
+{jp:'結婚する',r:'けっこんする',lao:'ແຕ່ງງານ',thai:'แต่งงาน'},
+{jp:'見学（する）',r:'けんがくする',lao:'ຢ້ຽມຊົມ',thai:'เยี่ยมชม'},
+{jp:'検査する',r:'けんさする',lao:'ກວດສອບ',thai:'ตรวจสอบ'},
+{jp:'合格（する）',r:'ごうかく（する）',lao:'ສອບເສັງຜ່ານ',thai:'สอบผ่าน'},
+{jp:'行動する',r:'こうどうする',lao:'ລົງມືເຮັດ',thai:'ลงมือทำ'},
+{jp:'購入（する）',r:'こうにゅう（する）',lao:'ຊື້',thai:'ซื้อ'},
+{jp:'御馳走する',r:'ごちそうする',lao:'ລ້ຽງອາຫານ',thai:'เลี้ยงอาหาร'},
+{jp:'コミュニケーションする',r:'コミュニケーションする',lao:'ສື່ສານ',thai:'สื่อสาร'},
+{jp:'ごろごろ（する）／ごろごろ（します）',r:'ごろごろ（する）／ごろごろ（します）',lao:'ນອນຫຼິ້ນ',thai:'นอนเล่น'},
+{jp:'ごろごろする',r:'ごろごろする',lao:'ນອນຫຼິ້ນ',thai:'นอนเล่น'},
+{jp:'再起動する',r:'さいきどうする',lao:'ຣີສະຕາດ',thai:'รีสตาร์ท'},
+{jp:'再生（する）',r:'さいせい（する）',lao:'ຫຼິ້ນ (ສຽງ/ວີດີໂອ)',thai:'เล่น (เสียง/วิดีโอ)'},
+{jp:'参加する',r:'さんかする',lao:'ເຂົ້າຮ່ວມ',thai:'เข้าร่วม'},
+{jp:'仕事をする',r:'しごとをする',lao:'ເຮັດວຽກ',thai:'ทำงาน'},
+{jp:'試着する',r:'しちゃくする',lao:'ລອງໃສ່',thai:'ลองสวม'},
+{jp:'失敗する',r:'しっぱいする',lao:'ລົ້ມເຫຼວ',thai:'ล้มเหลว'},
+{jp:'指定する',r:'していする',lao:'ກຳນົດ',thai:'กำหนด'},
+{jp:'じめじめする',r:'じめじめする',lao:'ຊຸ່ມຊື່ນ',thai:'ชื้นแฉะ'},
+{jp:'シャドーイングする',r:'シャドーイングする',lao:'ຝຶກເວົ້າຕາມສຽງ',thai:'ฝึกพูดตาม'},
+{jp:'集合（する）',r:'しゅうごう（する）',lao:'ລວມຕົວ',thai:'รวมตัว'},
+{jp:'重視する',r:'じゅうしする',lao:'ໃຫ້ຄວາມສຳຄັນ',thai:'ให้ความสำคัญ'},
+{jp:'就職する',r:'しゅうしょくする',lao:'ເຂົ້າເຮັດວຽກ',thai:'เข้าทำงาน'},
+{jp:'充電（する）',r:'じゅうでん（する）',lao:'ສາກໄຟ',thai:'ชาร์จไฟ'},
+{jp:'充満する',r:'じゅうまんする',lao:'ເຕັມໄປດ້ວຍ',thai:'เต็มไปด้วย'},
+{jp:'終了する',r:'しゅうりょうする',lao:'ສິ້ນສຸດ',thai:'สิ้นสุด'},
+{jp:'出発する',r:'しゅっぱつする',lao:'ອອກເດີນທາງ',thai:'ออกเดินทาง'},
+{jp:'出品する',r:'しゅっぴんする',lao:'ວາງຂາຍ',thai:'วางขาย'},
+{jp:'準備する',r:'じゅんびする',lao:'ກະກຽມ',thai:'เตรียมตัว'},
+{jp:'紹介する',r:'しょうかいする',lao:'ແນະນຳ',thai:'แนะนำ'},
+{jp:'消火する',r:'しょうかする',lao:'ດັບເພີງ',thai:'ดับไฟ'},
+{jp:'使用する',r:'しようする',lao:'ນຳໃຊ້',thai:'ใช้งาน'},
+{jp:'承認する',r:'しょうにんする',lao:'ອະນຸມັດ',thai:'อนุมัติ'},
+{jp:'上陸する',r:'じょうりくする',lao:'ຂຶ້ນຝັ່ງ',thai:'ขึ้นฝั่ง'},
+{jp:'ジョギングする',r:'ジョギングする',lao:'ແລ່ນຈັອກກິ້ງ',thai:'วิ่งจ๊อกกิ้ง'},
+{jp:'進学する',r:'しんがくする',lao:'ຮຽນຕໍ່',thai:'เรียนต่อ'},
+{jp:'親切にする',r:'しんせつにする',lao:'ໃຈດີນຳ',thai:'ใจดีด้วย'},
+{jp:'する （ピアスをする）',r:'する （ピアスをする）',lao:'ໃສ່ (ໃສ່ຕຸ້ມຫູ)',thai:'ใส่ (ใส่ต่างหู)'},
+{jp:'する／します',r:'する／します',lao:'ເຮັດ',thai:'ทำ'},
+{jp:'生活（する）',r:'せいかつ（する）',lao:'ໃຊ້ຊີວິດ',thai:'ใช้ชีวิต'},
+{jp:'生産する',r:'せいさんする',lao:'ຜະລິດ',thai:'ผลิต'},
+{jp:'節水する',r:'せっすいする',lao:'ປະຢັດນ້ຳ',thai:'ประหยัดน้ำ'},
+{jp:'設定する',r:'せっていする',lao:'ຕັ້ງຄ່າ',thai:'ตั้งค่า'},
+{jp:'節電する',r:'せつでんする',lao:'ປະຢັດໄຟ',thai:'ประหยัดไฟ'},
+{jp:'セットする',r:'セットする',lao:'ຈັດຕັ້ງ',thai:'จัดเตรียม'},
+{jp:'説明する',r:'せつめいする',lao:'ອະທິບາຍ',thai:'อธิบาย'},
+{jp:'説明する／説明します',r:'せつめいする／せつめいします',lao:'ອະທິບາຍ',thai:'อธิบาย'},
+{jp:'節約する',r:'せつやくする',lao:'ປະຢັດ',thai:'ประหยัด'},
+{jp:'掃除する／掃除します',r:'そうじする／そうじします',lao:'ອະນາໄມ',thai:'ทำความสะอาด'},
+{jp:'早退する',r:'そうたいする',lao:'ກັບກ່ອນເວລາ',thai:'กลับก่อนเวลา'},
+{jp:'相談する',r:'そうだんする',lao:'ປຶກສາ',thai:'ปรึกษา'},
+{jp:'卒業する',r:'そつぎょうする',lao:'ຈົບການສຶກສາ',thai:'เรียนจบ'},
+{jp:'ダイエットする',r:'ダイエットする',lao:'ຫຼຸດນ້ຳໜັກ',thai:'ลดน้ำหนัก'},
+{jp:'体験する',r:'たいけんする',lao:'ສຳຜັດປະສົບການ',thai:'สัมผัสประสบการณ์'},
+{jp:'大切にする',r:'たいせつにする',lao:'ໃຫ້ຄວາມສຳຄັນ',thai:'ให้ความสำคัญ'},
+{jp:'タッチする／タッチします',r:'タッチする／タッチします',lao:'ສຳຜັດ',thai:'สัมผัส'},
+{jp:'断水する',r:'だんすいする',lao:'ນ້ຳປະປາຕັດ',thai:'น้ำประปาไม่ไหล'},
+{jp:'チェックする',r:'チェックする',lao:'ກວດສອບ',thai:'ตรวจสอบ'},
+{jp:'遅刻する',r:'ちこくする',lao:'ມາຊ້າ',thai:'มาสาย'},
+{jp:'注意する',r:'ちゅういする',lao:'ລະມັດລະວັງ',thai:'ระมัดระวัง'},
+{jp:'注文する',r:'ちゅうもんする',lao:'ສັ່ງຊື້',thai:'สั่งซื้อ'},
+{jp:'調理（する）',r:'ちょうり（する）',lao:'ປຸງແຕ່ງອາຫານ',thai:'ปรุงอาหาร'},
+{jp:'貯金する',r:'ちょきんする',lao:'ທ້ອນເງິນ',thai:'ออมเงิน'},
+{jp:'通話（する）',r:'つうわ（する）',lao:'ໂທລົມກັນ',thai:'คุยโทรศัพท์'},
+{jp:'デートする',r:'デートする',lao:'ໄປເດດ',thai:'ไปเดท'},
+{jp:'提出する',r:'ていしゅつする',lao:'ຍື່ນສະເໜີ',thai:'ยื่นส่ง'},
+{jp:'停電する',r:'ていでんする',lao:'ໄຟຟ້າມອດ',thai:'ไฟดับ'},
+{jp:'点呼する',r:'てんこする',lao:'ເອີ້ນຊື່',thai:'เช็คชื่อ'},
+{jp:'展示する',r:'てんじする',lao:'ວາງສະແດງ',thai:'จัดแสดง'},
+{jp:'電話する／電話します',r:'でんわする／でんわします',lao:'ໂທລະສັບ',thai:'โทรศัพท์'},
+{jp:'投稿する',r:'とうこうする',lao:'ໂພສ',thai:'โพสต์'},
+{jp:'到着する',r:'とうちゃくする',lao:'ມາຮອດ',thai:'มาถึง'},
+{jp:'取って来る',r:'とってくる',lao:'ໄປເອົາມາ',thai:'ไปเอามา'},
+{jp:'入院する',r:'にゅういんする',lao:'ເຂົ້າໂຮງໝໍ',thai:'เข้าโรงพยาบาล'},
+{jp:'入力する',r:'にゅうりょくする',lao:'ປ້ອນຂໍ້ມູນ',thai:'ป้อนข้อมูล'},
+{jp:'妊娠する',r:'にんしんする',lao:'ຖືພາ',thai:'ตั้งครรภ์'},
+{jp:'寝坊する',r:'ねぼうする',lao:'ນອນຕື່ນສວາຍ',thai:'นอนตื่นสาย'},
+{jp:'拝借する',r:'はいしゃくする',lao:'ຂໍຢືມ',thai:'ขอยืม'},
+{jp:'入って来る',r:'はいってくる',lao:'ເຂົ້າມາ',thai:'เข้ามา'},
+{jp:'吐き気がする',r:'はきけがする',lao:'ຮູ້ສຶກປວດຮາກ',thai:'รู้สึกคลื่นไส้'},
+{jp:'発車する',r:'はっしゃする',lao:'ລົດອອກ',thai:'รถออก'},
+{jp:'発生する',r:'はっせいする',lao:'ເກີດຂຶ້ນ',thai:'เกิดขึ้น'},
+{jp:'低くする',r:'ひくくする',lao:'ເຮັດໃຫ້ຕ່ຳລົງ',thai:'ทำให้ต่ำลง'},
+{jp:'びっくりする',r:'びっくりする',lao:'ຕົກໃຈ',thai:'ตกใจ'},
+{jp:'避難する',r:'ひなんする',lao:'ອົບພະຍົບ',thai:'อพยพ'},
+{jp:'日焼けする',r:'ひやけする',lao:'ຖືກແດດເຜົາ',thai:'ผิวคล้ำแดด'},
+{jp:'表示する',r:'ひょうじする',lao:'ສະແດງຜົນ',thai:'แสดงผล'},
+{jp:'フタをする',r:'フタをする',lao:'ປິດຝາ',thai:'ปิดฝา'},
+{jp:'噴射する',r:'ふんしゃする',lao:'ສີດ',thai:'พ่น'},
+{jp:'分別する',r:'ぶんべつする',lao:'ແຍກ (ຂີ້ເຫຍື້ອ)',thai:'แยก (ขยะ)'},
+{jp:'勉強する',r:'べんきょうする',lao:'ຮຽນ',thai:'เรียน'},
+{jp:'勉強する／勉強します',r:'べんきょうする／べんきょうします',lao:'ຮຽນ',thai:'เรียน'},
+{jp:'勉強する／勉強します',r:'べんきょうする／べんきょうします',lao:'ຮຽນ',thai:'เรียน'},
+{jp:'報告する',r:'ほうこくする',lao:'ລາຍງານ',thai:'รายงาน'},
+{jp:'待ち合わせする',r:'まちあわせする',lao:'ນັດພົບ',thai:'นัดพบ'},
+{jp:'マッサージする',r:'マッサージする',lao:'ນວດ',thai:'นวด'},
+{jp:'真似をする',r:'まねをする',lao:'ຮຽນແບບ',thai:'เลียนแบบ'},
+{jp:'無理をする',r:'むりをする',lao:'ຝືນເຮັດ',thai:'ฝืนทำ'},
+{jp:'持って来る',r:'もってくる',lao:'ເອົາມາ',thai:'นำมา'},
+{jp:'優勝する',r:'ゆうしょうする',lao:'ຊະນະເລີດ',thai:'ชนะเลิศ'},
+{jp:'ゆっくりする／ゆっくりします',r:'ゆっくりする／ゆっくりします',lao:'ພັກຜ່ອນສະບາຍໆ',thai:'พักผ่อนสบายๆ'},
+{jp:'用意する',r:'よういする',lao:'ກຽມ',thai:'เตรียม'},
+{jp:'予防する',r:'よぼうする',lao:'ປ້ອງກັນ',thai:'ป้องกัน'},
+{jp:'予約する',r:'よやくする',lao:'ຈອງ',thai:'จอง'},
+{jp:'楽にする',r:'らくにする',lao:'ເຮັດໃຫ້ສະບາຍ',thai:'ทำตัวตามสบาย'},
+{jp:'リサイクルする',r:'リサイクルする',lao:'ຣີໄຊເຄິນ',thai:'รีไซเคิล'},
+{jp:'留学する',r:'りゅうがくする',lao:'ໄປຮຽນຕ່າງປະເທດ',thai:'ไปเรียนต่อต่างประเทศ'},
+{jp:'流行する',r:'りゅうこうする',lao:'ລະບາດ',thai:'ระบาด'},
+{jp:'利用（する）',r:'りよう（する）',lao:'ນຳໃຊ້',thai:'ใช้บริการ'},
+{jp:'両替（する）',r:'りょうがえ（する）',lao:'ແລກປ່ຽນເງິນຕາ',thai:'แลกเงิน'},
+{jp:'旅行する／旅行します',r:'りょこうする／りょこうします',lao:'ທ່ອງທ່ຽວ',thai:'ท่องเที่ยว'},
+{jp:'連絡する',r:'れんらくする',lao:'ຕິດຕໍ່',thai:'ติดต่อ'},
+  ],
+  conv:[
+    {jp:'ありがとう',r:'ありがとう',lao:'ຂອບໃຈ',thai:'ขอบคุณ'},
+    {jp:'すみません',r:'すみません',lao:'ຂໍໂທດ',thai:'ขอโทษ'},
+    {jp:'はじめまして',r:'はじめまして',lao:'ຍິນດີທີ່ໄດ້ຮູ້ຈັກ',thai:'ยินดีที่รู้จัก'},
+    {jp:'おねがいします',r:'おねがいします',lao:'ກະລຸນາ',thai:'ขอร้อง'},
+    {jp:'だいじょうぶ',r:'だいじょうぶ',lao:'ບໍ່ເປັນຫຍັງ',thai:'ไม่เป็นไร'},
+    {jp:'わかりました',r:'わかりました',lao:'ເຂົ້າໃຈແລ້ວ',thai:'เข้าใจแล้ว'},
+    {jp:'もう一度',r:'もういちど',lao:'ອີກເທື່ອ',thai:'อีกครั้ง'},
+    {jp:'おはよう',r:'おはよう',lao:'ສະບາຍດີ(ເຊົ້າ)',thai:'สวัสดีตอนเช้า'},
+    {jp:'こんにちは',r:'こんにちは',lao:'ສະບາຍດີ(ກາງວັນ)',thai:'สวัสดีตอนกลางวัน'},
+    {jp:'こんばんは',r:'こんばんは',lao:'ສະບາຍດີ(ແລງ)',thai:'สวัสดีตอนเย็น'},
+  ],
+  noun:[
+    {jp:'先生',r:'せんせい',lao:'ຄູ',thai:'ครู'},
+    {jp:'学生',r:'がくせい',lao:'ນັກຮຽນ',thai:'นักเรียน'},
+    {jp:'本',r:'ほん',lao:'ໜັງສື',thai:'หนังสือ'},
+    {jp:'水',r:'みず',lao:'ນ້ຳ',thai:'น้ำ'},
+    {jp:'食べ物',r:'たべもの',lao:'ອາຫານ',thai:'อาหาร'},
+    {jp:'会社',r:'かいしゃ',lao:'ບໍລິສັດ',thai:'บริษัท'},
+    {jp:'学校',r:'がっこう',lao:'ໂຮງຮຽນ',thai:'โรงเรียน'},
+    {jp:'電車',r:'でんしゃ',lao:'ລົດໄຟ',thai:'รถไฟ'},
+    {jp:'駅',r:'えき',lao:'ສະຖານີ',thai:'สถานี'},
+    {jp:'時間',r:'じかん',lao:'ເວລາ',thai:'เวลา'},
+    {jp:'お金',r:'おかね',lao:'ເງິນ',thai:'เงิน'},
+    {jp:'友達',r:'ともだち',lao:'ໝູ່',thai:'เพื่อน'},
+    {jp:'家族',r:'かぞく',lao:'ຄອບຄົວ',thai:'ครอบครัว'},
+    {jp:'仕事',r:'しごと',lao:'ວຽກ',thai:'งาน'},
+  ],
+  other:[
+    {jp:'でも',r:'でも',lao:'ແຕ່',thai:'แต่'},
+    {jp:'そして',r:'そして',lao:'ແລ້ວກໍ',thai:'แล้วก็'},
+    {jp:'また',r:'また',lao:'ອີກ',thai:'อีก'},
+    {jp:'もう',r:'もう',lao:'ແລ້ວ',thai:'แล้ว'},
+    {jp:'まだ',r:'まだ',lao:'ຍັງ',thai:'ยัง'},
+    {jp:'ちょっと',r:'ちょっと',lao:'ໜ້ອຍ',thai:'นิดหน่อย'},
+    {jp:'とても',r:'とても',lao:'ຫຼາຍ',thai:'มาก'},
+    {jp:'だから',r:'だから',lao:'ສະນັ້ນ',thai:'เพราะฉะนั้น'},
+    // Example format with slash to demonstrate dictionary vs masu form
+    {jp:'ごろごろ（する）／ごろごろ（します）', r:'ごろごろ（する）／ごろごろ（します）', lao:'ນອນກິ້ງກຽນ', thai:'นอนกลิ้งไปมา'}
+  ],
+};
+
+// ══════════════════════════════════════════
+// MODAL LOGIC (Replaces alerts)
+// ══════════════════════════════════════════
+function showModal(msg) {
+  document.getElementById('modal-msg-text').textContent = msg;
+  document.getElementById('custom-modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('custom-modal').classList.remove('show');
+}
+
+// ══════════════════════════════════════════
+// PAGE NAVIGATION
+// ══════════════════════════════════════════
+let _currentPage = 'p-login';
+
+function goTo(toId, direction='right') {
+  const from = document.getElementById(_currentPage);
+  const to   = document.getElementById(toId);
+  from.classList.remove('page-active');
+  from.classList.add(direction === 'right' ? 'page-hidden-left' : 'page-hidden-right');
+  to.classList.remove('page-hidden-right','page-hidden-left');
+  to.classList.add('page-active');
+  to.scrollTop = 0;
+  _currentPage = toId;
+}
+
+function goBack(toId, fromId) {
+  goTo(toId, 'left');
+}
+
+// ══════════════════════════════════════════
+// STATE & HELPER
+// ══════════════════════════════════════════
+let player = {id:'',name:''};
+let quizWords = [];
+let quizIndex = 0;
+let currentStep = 1;
+let startTime = null;
+let score = {s1:0,s2:0,s3:0};
+let wordScores = [];
+
+let s1Pool = [];
+let s1ReviewPool = [];
+let s1TotalRemaining = 0;
+
+let s2Answered = false;
+let s3Attempts = 0;
+let s3Correct = false;
+let arrangeAnswer = [];
+let arrangePool  = [];
+let arrangeUsed  = [];
+
+// Global Stats
+let sessionStats = { played: 0, s1: 0, s2: 0, s3: 0, totalS1: 0, totalS2: 0, totalS3: 0 };
+
+// HELPER: Extracts only the dictionary form (before the slash)
+function getDic(str) {
+  if (!str) return '';
+  return str.split(/／|\//)[0].trim();
+}
+
+// ══════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════
+function doLogin() {
+  const id   = document.getElementById('player-id').value.trim();
+  const name = document.getElementById('player-name').value.trim();
+  
+  if (!id || !name) { 
+    showModal('ກະລຸນາປ້ອນ ໄອດີ ແລະ ຊື່\nໃສ່ ID ແລະ ຊື່'); 
+    return; 
+  }
+  
+  // Requirement 1: Match exactly based on VALID_IDS
+  if (!VALID_IDS[id] || VALID_IDS[id] !== name) { 
+    showModal('❌ ຊື່ ແລະ ໄອດີ ບໍ່ກົງກັນ ເດັດຂາດ!\n\nກະລຸນາກວດສອບ ໄອດີ ແລະ ຊື່ຂອງທ່ານອີກຄັ້ງ.'); 
+    return; 
+  }
+  
+  player = {id, name};
+  document.getElementById('wl-player-badge').textContent = `👤 ${name}`;
+  document.getElementById('qp-player-badge').textContent = `👤 ${name}`;
+  buildUI();
+  goTo('p-wordlist');
+}
+
+// ══════════════════════════════════════════
+// MAIN TABS (inside wordlist page)
+// ══════════════════════════════════════════
+function switchMainTab(t) {
+  document.getElementById('tab-wl').classList.toggle('active', t==='wordlist');
+  document.getElementById('tab-qz').classList.toggle('active', t==='quiz');
+  document.getElementById('tab-st').classList.toggle('active', t==='stats');
+  document.getElementById('wl-content').classList.toggle('hidden', t!=='wordlist');
+  document.getElementById('qz-content').classList.toggle('hidden', t!=='quiz');
+  document.getElementById('st-content').classList.toggle('hidden', t!=='stats');
+}
+
+// ══════════════════════════════════════════
+// BUILD UI
+// ══════════════════════════════════════════
+function buildUI() {
+  const catGrid = document.getElementById('cat-grid');
+  catGrid.innerHTML = `
+    <div class="cat-card" onclick="showWordList('all', this)">
+      <div class="cat-icon" style="background:#e2e8f0;">📚</div>
+      <div><div class="cat-name">All Categories</div><div class="cat-count">ທຸກໝວດ</div></div>
+    </div>
+  `;
+  CATEGORIES.forEach(cat => {
+    const count = (WORDS[cat.id]||[]).length;
+    const div = document.createElement('div');
+    div.className = 'cat-card';
+    div.onclick = () => showWordList(cat.id, div);
+    div.innerHTML = `
+      <div class="cat-icon" style="background:${cat.color};">${cat.icon}</div>
+      <div><div class="cat-name">${cat.name}</div><div class="cat-count">${cat.nameT} · ${count} คำ</div></div>`;
+    catGrid.appendChild(div);
+  });
+  
+  const select = document.getElementById('quiz-cat-select');
+  CATEGORIES.forEach(cat => {
+    const max = (WORDS[cat.id]||[]).length;
+    const opt = document.createElement('option');
+    opt.value = cat.id;
+    opt.textContent = `${cat.icon} ${cat.name} (max ${max})`;
+    select.appendChild(opt);
+  });
+  
+  updateTotalPreview();
+}
+
+function updateTotalPreview() {
+  const catId = document.getElementById('quiz-cat-select').value;
+  if (!catId) {
+    document.getElementById('quiz-total-preview').textContent = `ລວມ: 0 ຄຳ`;
+    return;
+  }
+  
+  let allWords = [];
+  if (catId === 'all') {
+    CATEGORIES.forEach(c => allWords.push(...(WORDS[c.id]||[])));
+  } else {
+    allWords = WORDS[catId] || [];
+  }
+  
+  const max = allWords.length;
+  const fromInput = document.getElementById('quiz-from');
+  const toInput = document.getElementById('quiz-to');
+  
+  let from = fromInput.value ? parseInt(fromInput.value) : 1;
+  let to = toInput.value ? parseInt(toInput.value) : max;
+  
+  from = Math.max(1, Math.min(from, max));
+  to = Math.max(from, Math.min(to, max));
+  
+  const count = (to - from + 1) > 0 ? (to - from + 1) : 0;
+  document.getElementById('quiz-total-preview').textContent = `ລວມ: ${count} ຄຳ (ຈາກທັງໝົດ ${max})`;
+}
+
+// ══════════════════════════════════════════
+// WORD LIST
+// ══════════════════════════════════════════
+function showWordList(catId, cardEl) {
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  
+  let words = [];
+  let title = '';
+  if (catId === 'all') {
+    CATEGORIES.forEach(c => words.push(...(WORDS[c.id]||[])));
+    title = `📚 ທຸກໝວດ – ${words.length} คำ`;
+  } else {
+    words = WORDS[catId]||[];
+    const cat = CATEGORIES.find(c=>c.id===catId);
+    title = `${cat.icon} ${cat.name} – ${words.length} คำ`;
+  }
+  
+  const panel = document.getElementById('word-list-content');
+  panel.innerHTML = `<div class="word-header" style="display:grid;grid-template-columns:1fr 1fr 1fr;"><span>ภาษาญี่ปุ่น</span><span>ພາສາລາວ</span><span>ภาษาไทย</span></div>`;
+  words.forEach(w => {
+    const row = document.createElement('div');
+    row.className = 'word-row';
+    row.innerHTML = `
+      <div><div class="jp">${w.jp}</div><div class="reading">${w.r}</div></div>
+      <div class="lao">${w.lao}</div>
+      <div class="thai">${w.thai}</div>`;
+    panel.appendChild(row);
+  });
+  document.getElementById('wl-panel-title').textContent = title;
+}
+
+// ══════════════════════════════════════════
+// GO TO QUIZ PLAY
+// ══════════════════════════════════════════
+function goToQuizPlay() {
+  const catId = document.getElementById('quiz-cat-select').value;
+  if (!catId) {
+    showModal('ກະລຸນາເລືອກໝວດກ່ອນ / เลือกหมวดหมู่ก่อน');
+    return;
+  }
+  
+  let allWords = [];
+  if (catId === 'all') {
+    CATEGORIES.forEach(c => allWords.push(...(WORDS[c.id]||[])));
+  } else {
+    allWords = WORDS[catId] || [];
+  }
+  
+  const max = allWords.length;
+  const fromInput = document.getElementById('quiz-from');
+  const toInput = document.getElementById('quiz-to');
+  
+  let from = fromInput.value ? parseInt(fromInput.value) : 1;
+  let to = toInput.value ? parseInt(toInput.value) : max;
+  
+  from = Math.max(1, Math.min(from, max));
+  to = Math.max(from, Math.min(to, max));
+  
+  if (from > to) {
+    showModal('ໂຕເລກບໍ່ຖືກຕ້ອງ / ตัวเลขไม่ถูกต้อง');
+    return;
+  }
+  
+  quizWords = allWords.slice(from - 1, to);
+  
+  if (!quizWords.length) { 
+    showModal('เลือกคำอย่างน้อย 1 คำ\nເລືອກຢ່າງໜ້ອຍ 1 ຄຳ'); 
+    return; 
+  }
+  quizWords = shuffle(quizWords);
+  score = {s1:0,s2:0,s3:0};
+  wordScores = quizWords.map(w => ({word:w,s1:false,s2:false,s3:false,s1done:false,s2done:false,s3done:false}));
+  
+  quizIndex  = 0;
+  currentStep = 1;
+  s1Pool = quizWords.map((_,i)=>i);
+  s1ReviewPool = [];
+  s1TotalRemaining = quizWords.length;
+  
+  startTime = Date.now();
+  goTo('p-quiz-play');
+  renderStep1();
+}
+
+// ══════════════════════════════════════════
+// STEP 1
+// ══════════════════════════════════════════
+function renderStep1() {
+  currentStep = 1;
+  setPip(1,'ขั้น 1: จดจำคำศัพท์');
+  if (!s1Pool.length) return; // Should not happen directly here due to logic
+  quizIndex = s1Pool[0];
+  const w = quizWords[quizIndex];
+  updateProgress();
+  
+  const c = document.getElementById('step1-content');
+  c.classList.remove('hidden');
+  document.getElementById('step2-content').classList.add('hidden');
+  document.getElementById('step3-content').classList.add('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  c.innerHTML = `
+    <div class="word-display fade-in">
+      <div class="word-jp">${w.jp}</div>
+      <div class="word-reading">${w.r}</div>
+      <div class="word-meanings">
+        <div class="meaning-tag meaning-lao">🇱🇦 ${w.lao}</div>
+        <div class="meaning-tag meaning-thai">🇹🇭 ${w.thai}</div>
+      </div>
+      <div class="remember-btns">
+        <button class="btn-remember btn-no"  onclick="rememberNo()">❌ ยังจำไม่ได้</button>
+        <button class="btn-remember btn-yes" onclick="rememberYes()">✅ จำได้แล้ว</button>
+      </div>
+    </div>`;
+}
+
+function rememberYes() {
+  const ws = wordScores[quizIndex];
+  if (!ws.s1done) { ws.s1 = true; ws.s1done = true; score.s1++; }
+  s1TotalRemaining--;
+  s1Pool.shift();
+  checkStep1Progress();
+}
+
+function rememberNo() {
+  const ws = wordScores[quizIndex];
+  if (!ws.s1done) ws.s1done = true;
+  
+  // Requirement 2: Don't loop immediately, put in Review pool
+  s1ReviewPool.push(s1Pool.shift());
+  checkStep1Progress();
+}
+
+function checkStep1Progress() {
+  if (s1Pool.length === 0) {
+    if (s1ReviewPool.length > 0) {
+      // Show review modal when all words of the pass are finished
+      s1Pool = s1ReviewPool;
+      s1ReviewPool = [];
+      showModal('🔄 ຍັງມີຄຳສັບທີ່ບໍ່ທັນຈື່\nໃຫ້ຮຽນຄຳທີ່ບໍ່ຈື່ຄືນໃໝ່!');
+      renderStep1();
+    } else {
+      transitionToStep2();
+    }
+  } else {
+    renderStep1();
+  }
+}
+
+function transitionToStep2() { quizIndex=0; currentStep=2; renderStep2(); }
+
+// ══════════════════════════════════════════
+// STEP 2
+// ══════════════════════════════════════════
+function renderStep2() {
+  currentStep = 2;
+  setPip(2,'ขั้น 2: เรียงตัวอักษร');
+  if (quizIndex >= quizWords.length) { transitionToStep3(); return; }
+  const w = quizWords[quizIndex];
+  updateProgress();
+  s2Answered = false; // False meaning "Not solved correctly yet"
+  
+  // Extract ONLY the dictionary form for arranging
+  const dicReading = getDic(w.r);
+  const letters = dicReading.split('');
+  
+  arrangePool   = shuffle([...letters]);
+  arrangeAnswer = Array(letters.length).fill(null);
+  arrangeUsed   = Array(letters.length).fill(false);
+  
+  document.getElementById('step1-content').classList.add('hidden');
+  document.getElementById('step3-content').classList.add('hidden');
+  document.getElementById('step2-content').classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  renderArrange(w);
+}
+
+function renderArrange(w, showFeedback, feedbackText, feedbackOk) {
+  const c = document.getElementById('step2-content');
+  const ansHtml  = arrangeAnswer.map((l,i)=>
+    `<div class="letter-slot" onclick="removeLetterAt(${i})">${l||''}</div>`).join('');
+  const poolHtml = arrangePool.map((l,i)=>
+    `<div class="letter-tile${arrangeUsed[i]?' used':''}" onclick="placeLetterFrom(${i})">${l}</div>`).join('');
+  const fb = showFeedback
+    ? `<div class="feedback-msg ${feedbackOk?'feedback-ok':'feedback-err'}">${feedbackText}</div>`
+    : `<div class="feedback-msg"></div>`;
+  c.innerHTML = `
+    <div class="fade-in">
+      <div class="arrange-meaning">🇱🇦 ${w.lao}<br><span style="font-size:15px;color:var(--slate-mid)">🇹🇭 ${w.thai}</span></div>
+      <div class="letter-answer">${ansHtml}</div>
+      <div class="letter-pool">${poolHtml}</div>
+      ${fb}
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn-check" onclick="checkArrange()" ${s2Answered?'disabled style=opacity:.4':''}>✅ ตรวจ</button>
+        <button onclick="clearArrange()" style="margin-left:10px;padding:10px 18px;border-radius:12px;background:var(--bg);border:2px solid var(--slate-light);font-family:inherit;font-weight:700;cursor:pointer;">🔄 ລ้าง</button>
+      </div>
+    </div>`;
+}
+
+function placeLetterFrom(i) {
+  if (arrangeUsed[i] || s2Answered) return;
+  const slot = arrangeAnswer.findIndex(s=>s===null);
+  if (slot===-1) return;
+  arrangeAnswer[slot] = arrangePool[i];
+  arrangeUsed[i] = true;
+  renderArrange(quizWords[quizIndex]);
+}
+function removeLetterAt(i) {
+  if (s2Answered) return;
+  const letter = arrangeAnswer[i];
+  if (!letter) return;
+  const pi = arrangePool.findIndex((l,idx)=>l===letter&&arrangeUsed[idx]);
+  if (pi!==-1) arrangeUsed[pi]=false;
+  arrangeAnswer[i]=null;
+  renderArrange(quizWords[quizIndex]);
+}
+function clearArrange() {
+  if (s2Answered) return;
+  const dicReading = getDic(quizWords[quizIndex].r);
+  arrangeAnswer = Array(dicReading.length).fill(null);
+  arrangeUsed   = Array(arrangePool.length).fill(false);
+  renderArrange(quizWords[quizIndex]);
+}
+
+// Requirement 3: Re-arrange logic if incorrect
+function checkArrange() {
+  if (s2Answered) return;
+  if (arrangeAnswer.includes(null)) { renderArrange(quizWords[quizIndex],true,'⚠️ ວາງຕົວອັກສອນໃຫ້ຄົບກ່ອນ',false); return; }
+  
+  const ans = arrangeAnswer.join('');
+  const dicReading = getDic(quizWords[quizIndex].r);
+  const correct = (ans === dicReading);
+  const ws = wordScores[quizIndex];
+  
+  if (correct) {
+    s2Answered = true; // Lock the answer since it's correct
+    if (!ws.s2done) { ws.s2=true; ws.s2done=true; score.s2++; }
+    renderArrange(quizWords[quizIndex], true, '🎉 ຖືກຕ້ອງ!', true);
+    document.getElementById('btn-next').classList.remove('hidden');
+  } else {
+    // If incorrect, don't set s2Answered to true so they can clear and try again
+    if (!ws.s2done) { ws.s2=false; ws.s2done=true; } // Penalty score applied on first fail
+    renderArrange(quizWords[quizIndex], true, '❌ ຍັງບໍ່ຖືກຕ້ອງ ລອງລຽງໃໝ່!', false);
+  }
+}
+
+function transitionToStep3() { quizIndex=0; currentStep=3; renderStep3(); }
+
+// ══════════════════════════════════════════
+// STEP 3
+// ══════════════════════════════════════════
+function renderStep3() {
+  currentStep = 3;
+  setPip(3,'ขั้น 3: พิมพ์คำ');
+  if (quizIndex>=quizWords.length) { showFinal(); return; }
+  const w = quizWords[quizIndex];
+  updateProgress();
+  s3Attempts = 0; s3Correct = false;
+  document.getElementById('step1-content').classList.add('hidden');
+  document.getElementById('step2-content').classList.add('hidden');
+  document.getElementById('step3-content').classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  renderType(w,'','','');
+}
+
+function renderType(w, feedback, hint, typedValue = '') {
+  const c = document.getElementById('step3-content');
+  c.innerHTML = `
+    <div class="fade-in">
+      <div class="arrange-meaning">🇱🇦 ${w.lao}<br><span style="font-size:15px;color:var(--slate-mid)">🇹🇭 ${w.thai}</span></div>
+      ${hint?`<div class="hint-display">💡 힌트: ${hint}</div>`:'<div class="hint-display"></div>'}
+      <div class="type-input-wrap">
+        <input type="text" class="type-input" id="type-ans" placeholder="ພິມຄຳອ່ານ..." autocomplete="off" autocorrect="off" spellcheck="false"
+          value="${typedValue}" onkeydown="if(event.key==='Enter')checkType()" ${s3Correct||(s3Attempts>=3)?'disabled':''}>
+      </div>
+      <div class="feedback-msg" id="type-feedback">${feedback}</div>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn-check" onclick="checkType()" ${s3Correct||(s3Attempts>=3)?'disabled style=opacity:.4':''}>✅ ตรวจ</button>
+      </div>
+    </div>`;
+  if (!s3Correct && s3Attempts<3) setTimeout(()=>{const el=document.getElementById('type-ans');if(el){el.focus();el.selectionStart = el.selectionEnd = el.value.length;}},100);
+}
+
+// Requirement 4: Show reading when typing is correct
+function checkType() {
+  const w   = quizWords[quizIndex];
+  const ans = (document.getElementById('type-ans').value||'').trim();
+  if (!ans) return;
+  
+  // Extract ONLY the dictionary form for checking
+  const dicReading = getDic(w.r);
+  
+  if (ans === dicReading) {
+    s3Correct=true;
+    const ws=wordScores[quizIndex];
+    if(!ws.s3done){ws.s3=(s3Attempts===0);ws.s3done=true;if(s3Attempts===0)score.s3++;}
+    
+    // Updated to show correct reading sound
+    renderType(w, '🎉 ຖືກຕ້ອງ! ສຽງອ່ານແມ່ນ: ' + dicReading, '', ans);
+    document.getElementById('type-feedback').className='feedback-msg feedback-ok';
+    document.getElementById('btn-next').classList.remove('hidden');
+  } else {
+    s3Attempts++;
+    const ws=wordScores[quizIndex];
+    if(!ws.s3done)ws.s3done=true;
+    let hint='';
+    if(s3Attempts>=1) hint=dicReading.slice(0,s3Attempts+1);
+    
+    if(s3Attempts>=3){
+      renderType(w,`❌ ຄຳທີ່ຖືກຄື: ${dicReading}`,hint, ans);
+      document.getElementById('type-feedback').className='feedback-msg feedback-err';
+      document.getElementById('btn-next').classList.remove('hidden');
+    } else {
+      renderType(w,'❌ ລອງອີກຄັ້ງ',hint, ans);
+      document.getElementById('type-feedback').className='feedback-msg feedback-err';
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// NEXT WORD
+// ══════════════════════════════════════════
+function nextWord() {
+  document.getElementById('btn-next').classList.add('hidden');
+  quizIndex++;
+  if (currentStep===2) renderStep2();
+  else if (currentStep===3) renderStep3();
+}
+
+// ══════════════════════════════════════════
+// FINAL
+// ══════════════════════════════════════════
+function showFinal() {
+  const elapsed = Math.floor((Date.now()-startTime)/1000);
+  const mins = Math.floor(elapsed/60), secs = elapsed%60;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  const timeStr = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const total = quizWords.length*3;
+  const got   = score.s1+score.s2+score.s3;
+  
+  // Update Global Stats
+  sessionStats.played++;
+  sessionStats.s1 += score.s1; sessionStats.totalS1 += quizWords.length;
+  sessionStats.s2 += score.s2; sessionStats.totalS2 += quizWords.length;
+  sessionStats.s3 += score.s3; sessionStats.totalS3 += quizWords.length;
+  updateStatsUI();
+
+  document.getElementById('result-player-name').textContent = `👤 ${player.name}`;
+  document.getElementById('result-date').textContent        = `📅 ${dateStr} ${timeStr}`;
+  document.getElementById('result-time-spent').textContent  = `⏱ ${mins}:${secs.toString().padStart(2,'0')}`;
+  document.getElementById('result-id-tag').textContent      = `🆔 ${player.id}`;
+  document.getElementById('sc1').textContent  = score.s1;
+  document.getElementById('sc1d').textContent = `/ ${quizWords.length}`;
+  document.getElementById('sc2').textContent  = score.s2;
+  document.getElementById('sc2d').textContent = `/ ${quizWords.length}`;
+  document.getElementById('sc3').textContent  = score.s3;
+  document.getElementById('sc3d').textContent = `/ ${quizWords.length}`;
+  document.getElementById('score-total-num').textContent = `${got} / ${total}`;
+  goTo('p-final');
+}
+function showCaptureHint() {
+  const el=document.getElementById('capture-hint');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function toggleReview() {
+  const rv=document.getElementById('review-list');
+  if(!rv.classList.contains('hidden')){rv.classList.add('hidden');return;}
+  rv.innerHTML='<div style="font-weight:700;color:var(--slate);margin-bottom:10px;">📋 รีวิวคำศัพท์:</div>';
+  wordScores.forEach(ws=>{
+    const allOk=ws.s1&&ws.s2&&ws.s3;
+    const div=document.createElement('div');
+    div.className='review-item';
+    div.innerHTML=`
+      <div class="review-dot ${allOk?'dot-ok':'dot-err'}"></div>
+      <div class="review-jp">${ws.word.jp}</div>
+      <div style="flex:1">
+        <div class="review-lao">${ws.word.r} | ${ws.word.lao} | ${ws.word.thai}</div>
+        <div style="font-size:11px;color:var(--slate-mid)">${ws.s1?'✅':'❌'} จำ &nbsp; ${ws.s2?'✅':'❌'} เรียง &nbsp; ${ws.s3?'✅':'❌'} พิมพ์</div>
+      </div>`;
+    rv.appendChild(div);
+  });
+  rv.classList.remove('hidden');
+}
+function playAgain() {
+  goTo('p-wordlist','left');
+  switchMainTab('quiz');
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function setPip(n,label) {
+  document.getElementById('step-pip').textContent  = n;
+  document.getElementById('step-label').textContent = label;
+}
+
+function updateProgress() {
+  const total = quizWords.length; let pct;
+  if (currentStep===1) pct=((total-s1TotalRemaining)/total)*33;
+  else if (currentStep===2) pct=33+(quizIndex/total)*33;
+  else pct=66+(quizIndex/total)*34;
+  document.getElementById('quiz-progress').style.width=Math.min(100,pct)+'%';
+  
+  document.getElementById('word-counter').textContent=
+    currentStep===1?`${total-s1TotalRemaining}/${total}`:`${quizIndex+1}/${total}`;
+}
+
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function updateStatsUI() {
+  document.getElementById('stat-s1').textContent = sessionStats.s1;
+  document.getElementById('stat-s1d').textContent = `/ ${sessionStats.totalS1}`;
+  document.getElementById('stat-s2').textContent = sessionStats.s2;
+  document.getElementById('stat-s2d').textContent = `/ ${sessionStats.totalS2}`;
+  document.getElementById('stat-s3').textContent = sessionStats.s3;
+  document.getElementById('stat-s3d').textContent = `/ ${sessionStats.totalS3}`;
+  document.getElementById('stat-games').textContent = sessionStats.played;
+}
+</script>
+</body>
+</html>
+
